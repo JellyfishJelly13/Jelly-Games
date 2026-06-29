@@ -1,15 +1,15 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monkey Mart Save Manager</title>
+    <title>Monkey Mart Save Manager 🍌</title>
     <!-- Google Fonts for a playful, bouncy aesthetic -->
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #8bc34a; /* Grass green */
+            --bg-color: #7cb342; /* Grass green */
+            --bg-gradient: radial-gradient(circle at top, #aed581, #7cb342);
             --card-bg: #fffde7;
             --text-dark: #3e2723;
             --border-color: #5d4037;
@@ -30,7 +30,7 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: var(--bg-color);
+            background: var(--bg-gradient);
             font-family: 'Fredoka', sans-serif;
             color: var(--text-dark);
             display: flex;
@@ -53,6 +53,7 @@
             color: #fff;
             text-shadow: 2px 2px 0 var(--text-dark), -2px -2px 0 var(--text-dark), 2px -2px 0 var(--text-dark), -2px 2px 0 var(--text-dark);
             letter-spacing: 2px;
+            animation: bounceIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         #save-list {
@@ -73,7 +74,21 @@
             width: 100%;
             max-width: 600px;
             box-shadow: 0 8px 0 rgba(93, 64, 55, 0.2);
+            transition: all 0.3s ease;
             position: relative;
+            animation: popIn 0.5s ease backwards;
+        }
+
+        .save-card:hover {
+            transform: translateY(-3px);
+        }
+
+        /* Highlight Selected Save */
+        .save-card.selected {
+            border-color: #ff9800;
+            box-shadow: 0 0 20px rgba(255, 152, 0, 0.6), 0 8px 0 #ef6c00;
+            transform: scale(1.02);
+            background-color: #fff8e1;
         }
 
         .save-card h2 {
@@ -102,7 +117,7 @@
             border: 3px solid var(--border-color);
             cursor: pointer;
             text-transform: uppercase;
-            transition: transform 0.1s;
+            transition: transform 0.1s, box-shadow 0.1s;
             color: var(--text-dark);
         }
 
@@ -111,7 +126,14 @@
             box-shadow: none !important;
         }
 
-        .btn-use { background: var(--btn-green); box-shadow: 0 4px 0 var(--btn-green-shadow); color: white; text-shadow: 1px 1px 0 #000; }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none !important;
+        }
+
+        .btn-select { background: var(--btn-green); box-shadow: 0 4px 0 var(--btn-green-shadow); color: white; text-shadow: 1px 1px 0 #000; }
         .btn-edit { background: var(--btn-blue); box-shadow: 0 4px 0 var(--btn-blue-shadow); color: white; text-shadow: 1px 1px 0 #000; }
         .btn-overwrite { background: var(--btn-orange); box-shadow: 0 4px 0 var(--btn-orange-shadow); color: white; text-shadow: 1px 1px 0 #000; }
         .btn-delete { background: var(--btn-red); box-shadow: 0 4px 0 var(--btn-red-shadow); color: white; text-shadow: 1px 1px 0 #000; }
@@ -122,48 +144,63 @@
             display: flex;
             justify-content: space-around;
             z-index: 10;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.2);
         }
 
         .btn-add { background: var(--btn-yellow); box-shadow: 0 4px 0 var(--btn-yellow-shadow); font-size: 1.2rem; padding: 15px 30px;}
         .btn-play { background: var(--btn-green); box-shadow: 0 4px 0 var(--btn-green-shadow); color: white; font-size: 1.2rem; padding: 15px 30px;}
 
-        /* Modal Styles */
-        #edit-modal {
+        /* Pulse Animation for Play Button */
+        .btn-play.pulse {
+            animation: pulse-anim 1.5s infinite;
+        }
+
+        /* Modals & Overlays */
+        #modal-overlay {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.6);
             z-index: 100;
             justify-content: center;
             align-items: center;
+            backdrop-filter: blur(3px);
         }
 
-        #edit-modal.visible {
+        #modal-overlay.visible {
             display: flex;
+            animation: fadeIn 0.3s;
         }
 
-        .modal-content {
+        .custom-modal {
+            display: none;
             background: var(--card-bg);
             border: 5px solid var(--border-color);
             border-radius: 20px;
             padding: 25px;
             width: 90%;
             max-width: 500px;
+            box-shadow: 0 10px 0 rgba(0,0,0,0.3);
+            text-align: center;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             max-height: 85vh;
             overflow-y: auto;
-            box-shadow: 0 10px 0 rgba(0,0,0,0.3);
         }
 
-        .modal-content h2 {
+        .custom-modal.active {
+            display: block;
+        }
+
+        .custom-modal h2 {
             margin-top: 0;
-            text-align: center;
             color: var(--btn-orange-shadow);
         }
 
         .form-group {
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             display: flex;
             flex-direction: column;
+            text-align: left;
         }
 
         .form-group label {
@@ -171,28 +208,49 @@
             margin-bottom: 5px;
         }
 
-        .form-group input, .form-group textarea {
+        .modal-input {
             font-family: 'Fredoka', sans-serif;
-            padding: 10px;
+            padding: 12px;
             border-radius: 12px;
             border: 3px solid #ccc;
-            font-size: 1rem;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            width: 90%;
         }
 
-        .form-group input:focus, .form-group textarea:focus {
+        .modal-input:focus {
             outline: none;
             border-color: var(--btn-blue);
         }
 
-        .form-group textarea {
-            resize: vertical;
-            height: 60px;
-        }
-
         .modal-buttons {
             display: flex;
-            justify-content: space-between;
+            justify-content: space-around;
             margin-top: 20px;
+        }
+
+        .timer-text {
+            font-size: 1.5rem;
+            color: var(--btn-red-shadow);
+            font-weight: 700;
+            margin: 10px 0;
+            animation: bounceIn 0.5s infinite alternate;
+        }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { 
+            0% { transform: scale(0.7); opacity: 0; } 
+            100% { transform: scale(1); opacity: 1; } 
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.9); }
+            100% { transform: scale(1.1); }
+        }
+        @keyframes pulse-anim {
+            0% { transform: scale(1); box-shadow: 0 4px 0 var(--btn-green-shadow); }
+            50% { transform: scale(1.08); box-shadow: 0 8px 15px var(--btn-green-shadow); background: #66bb6a; }
+            100% { transform: scale(1); box-shadow: 0 4px 0 var(--btn-green-shadow); }
         }
 
         @media (max-width: 600px) {
@@ -205,12 +263,12 @@
 <body>
 
     <header>
-        <h1>Monkey Mart Save Manager</h1>
+        <h1>Monkey Mart Save Manager 🍌</h1>
     </header>
 
     <main id="save-list">
         <!-- Save cards will be injected here -->
-        <h3 style="color: white; text-align: center;">Loading saves from Firebase...</h3>
+        <h3 style="color: white; text-align: center;">Loading bananas... 🍌</h3>
     </main>
 
     <footer>
@@ -218,52 +276,65 @@
         <button id="play-btn" class="btn-play">PLAY GAME</button>
     </footer>
 
-    <!-- Edit Save Modal -->
-    <div id="edit-modal">
-        <div class="modal-content">
+    <!-- Universal Modal Overlay -->
+    <div id="modal-overlay">
+
+        <!-- 1. Generic Alert / Confirm Modal -->
+        <div id="msg-modal" class="custom-modal">
+            <h2 id="msg-title">Notice</h2>
+            <p id="msg-desc" style="font-size: 1.1rem;"></p>
+            <div class="modal-buttons">
+                <button id="msg-btn-no" class="btn-delete">No</button>
+                <button id="msg-btn-yes" class="btn-select">Yes</button>
+            </div>
+        </div>
+
+        <!-- 2. Add Save Prompt Modal -->
+        <div id="add-modal" class="custom-modal">
+            <h2>Add New Save</h2>
+            <p>Save your current progress to the cloud!</p>
+            <input type="text" id="add-name" class="modal-input" placeholder="Save Name (e.g. Max Cash)">
+            <input type="text" id="add-desc" class="modal-input" placeholder="Short Description">
+            <div class="modal-buttons">
+                <button id="add-btn-cancel" class="btn-delete">Cancel</button>
+                <button id="add-btn-save" class="btn-select">Save to Cloud</button>
+            </div>
+        </div>
+
+        <!-- 3. Danger Countdown Modal (Delete / Clear) -->
+        <div id="danger-modal" class="custom-modal">
+            <h2 id="danger-title">Danger!</h2>
+            <p id="danger-desc" style="font-size: 1.1rem;"></p>
+            <input type="text" id="danger-input" class="modal-input" placeholder="Type here..." autocomplete="off">
+            <div id="danger-timer-container" style="display: none;">
+                <p>Action executing in:</p>
+                <div id="danger-timer" class="timer-text">10</div>
+            </div>
+            <div class="modal-buttons">
+                <button id="danger-btn-cancel" class="btn-select">Cancel</button>
+                <button id="danger-btn-verify" class="btn-delete" disabled>Verify</button>
+            </div>
+        </div>
+
+        <!-- 4. Edit Save Modal -->
+        <div id="edit-modal" class="custom-modal">
             <h2>Edit Save Data</h2>
-            <div class="form-group">
-                <label>Coins</label>
-                <input type="number" id="edit-coins">
-            </div>
-            <div class="form-group">
-                <label>Cash</label>
-                <input type="number" id="edit-cash">
-            </div>
-            <div class="form-group">
-                <label>Cash 2</label>
-                <input type="number" id="edit-cash2">
-            </div>
-            <div class="form-group">
-                <label>Cash 3</label>
-                <input type="number" id="edit-cash3">
-            </div>
-            <div class="form-group">
-                <label>Cash 4</label>
-                <input type="number" id="edit-cash4">
-            </div>
-            <div class="form-group">
-                <label>Num Market</label>
-                <input type="number" id="edit-num-market">
-            </div>
-            <div class="form-group">
-                <label>Selected Hat</label>
-                <input type="number" id="edit-hat">
-            </div>
-            <div class="form-group">
-                <label>Upgrades (JSON Array)</label>
-                <textarea id="edit-upgrades"></textarea>
-            </div>
-            <div class="form-group">
-                <label>Have Places (JSON Array)</label>
-                <textarea id="edit-have-places"></textarea>
-            </div>
+            <div class="form-group"><label>Coins</label><input type="number" id="edit-coins" class="modal-input" style="padding: 8px; margin-bottom: 0;"></div>
+            <div class="form-group"><label>Cash</label><input type="number" id="edit-cash" class="modal-input" style="padding: 8px; margin-bottom: 0;"></div>
+            <div class="form-group"><label>Cash 2</label><input type="number" id="edit-cash2" class="modal-input" style="padding: 8px; margin-bottom: 0;"></div>
+            <div class="form-group"><label>Cash 3</label><input type="number" id="edit-cash3" class="modal-input" style="padding: 8px; margin-bottom: 0;"></div>
+            <div class="form-group"><label>Cash 4</label><input type="number" id="edit-cash4" class="modal-input" style="padding: 8px; margin-bottom: 0;"></div>
+            <div class="form-group"><label>Num Market</label><input type="number" id="edit-num-market" class="modal-input" style="padding: 8px; margin-bottom: 0;"></div>
+            <div class="form-group"><label>Selected Hat</label><input type="number" id="edit-hat" class="modal-input" style="padding: 8px; margin-bottom: 0;"></div>
+            <div class="form-group"><label>Upgrades (JSON Array)</label><textarea id="edit-upgrades" class="modal-input" style="padding: 8px; height: 50px; margin-bottom: 0;"></textarea></div>
+            <div class="form-group"><label>Have Places (JSON Array)</label><textarea id="edit-have-places" class="modal-input" style="padding: 8px; height: 50px; margin-bottom: 0;"></textarea></div>
             
             <div class="modal-buttons">
                 <button id="cancel-edit-btn" class="btn-delete">Cancel</button>
-                <button id="save-edit-btn" class="btn-use">Save Changes</button>
+                <button id="save-edit-btn" class="btn-select">Save Changes</button>
             </div>
         </div>
+
     </div>
 
     <!-- Firebase SDK (v10 Module) -->
@@ -283,17 +354,105 @@
 
         const LOCAL_KEY = 'monkeymart_config';
         let savesCache = {};
+        let selectedSaveId = null; 
         let currentEditId = null;
+
+        // Modal Management
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modals = document.querySelectorAll('.custom-modal');
+
+        function openModal(modalId) {
+            modals.forEach(m => m.classList.remove('active'));
+            document.getElementById(modalId).classList.add('active');
+            modalOverlay.classList.add('visible');
+        }
+
+        function closeModal() {
+            modalOverlay.classList.remove('visible');
+            modals.forEach(m => m.classList.remove('active'));
+        }
+
+        // Custom Alert & Confirm
+        function showAlert(message) {
+            document.getElementById('msg-title').innerText = "Notice";
+            document.getElementById('msg-desc').innerText = message;
+            document.getElementById('msg-btn-yes').innerText = "OK";
+            document.getElementById('msg-btn-yes').onclick = closeModal;
+            document.getElementById('msg-btn-no').style.display = "none";
+            openModal('msg-modal');
+        }
+
+        function showConfirm(title, message, onConfirm) {
+            document.getElementById('msg-title').innerText = title;
+            document.getElementById('msg-desc').innerText = message;
+            document.getElementById('msg-btn-yes').innerText = "Yes";
+            document.getElementById('msg-btn-no').style.display = "block";
+            
+            document.getElementById('msg-btn-yes').onclick = () => {
+                closeModal();
+                if(onConfirm) onConfirm();
+            };
+            document.getElementById('msg-btn-no').onclick = closeModal;
+            
+            openModal('msg-modal');
+        }
+
+        // Danger Countdown Logic
+        let dangerInterval = null;
+        function showDangerCountdown(title, expectedText, onTimerEnd) {
+            const descEl = document.getElementById('danger-desc');
+            const inputEl = document.getElementById('danger-input');
+            const verifyBtn = document.getElementById('danger-btn-verify');
+            const cancelBtn = document.getElementById('danger-btn-cancel');
+            const timerContainer = document.getElementById('danger-timer-container');
+            const timerEl = document.getElementById('danger-timer');
+
+            // Reset State
+            if(dangerInterval) clearInterval(dangerInterval);
+            inputEl.style.display = 'block';
+            inputEl.value = '';
+            verifyBtn.style.display = 'block';
+            verifyBtn.disabled = true;
+            timerContainer.style.display = 'none';
+
+            document.getElementById('danger-title').innerText = title;
+            descEl.innerHTML = `Type <strong>"${expectedText}"</strong> to proceed.`;
+
+            inputEl.oninput = () => {
+                verifyBtn.disabled = (inputEl.value !== expectedText);
+            };
+
+            verifyBtn.onclick = () => {
+                inputEl.style.display = 'none';
+                verifyBtn.style.display = 'none';
+                timerContainer.style.display = 'block';
+                
+                let timeLeft = 10;
+                timerEl.innerText = timeLeft;
+
+                dangerInterval = setInterval(() => {
+                    timeLeft--;
+                    timerEl.innerText = timeLeft;
+                    if(timeLeft <= 0) {
+                        clearInterval(dangerInterval);
+                        closeModal();
+                        if(onTimerEnd) onTimerEnd();
+                    }
+                }, 1000);
+            };
+
+            cancelBtn.onclick = () => {
+                if(dangerInterval) clearInterval(dangerInterval);
+                closeModal();
+            };
+
+            openModal('danger-modal');
+        }
+
 
         // DOM Elements
         const saveListEl = document.getElementById('save-list');
-        const addSaveBtn = document.getElementById('add-save-btn');
         const playBtn = document.getElementById('play-btn');
-        
-        // Modal Elements
-        const editModal = document.getElementById('edit-modal');
-        const saveEditBtn = document.getElementById('save-edit-btn');
-        const cancelEditBtn = document.getElementById('cancel-edit-btn');
 
         // Fetch and Render Saves
         onValue(savesRef, (snapshot) => {
@@ -306,17 +465,21 @@
             }
 
             const data = snapshot.val();
+            let delay = 0;
             
-            // Convert to array to render
             for (const [id, save] of Object.entries(data)) {
                 savesCache[id] = save;
                 const card = document.createElement('div');
-                card.className = 'save-card';
+                card.className = `save-card ${selectedSaveId === id ? 'selected' : ''}`;
+                card.id = `card-${id}`;
+                card.style.animationDelay = `${delay}s`;
+                delay += 0.05;
+
                 card.innerHTML = `
                     <h2>${escapeHTML(save.name || 'Unnamed Save')}</h2>
                     <p>${escapeHTML(save.description || 'No description provided.')}</p>
                     <div class="button-group">
-                        <button class="btn-use" data-id="${id}">Use Save</button>
+                        <button class="btn-select" data-id="${id}">Select Save</button>
                         <button class="btn-edit" data-id="${id}">Edit</button>
                         <button class="btn-overwrite" data-id="${id}">Overwrite</button>
                         <button class="btn-delete" data-id="${id}">Delete</button>
@@ -332,45 +495,58 @@
             if (!btn.dataset.id) return;
             const id = btn.dataset.id;
 
-            if (btn.classList.contains('btn-use')) useSave(id);
+            if (btn.classList.contains('btn-select')) selectSave(id);
             else if (btn.classList.contains('btn-edit')) openEditModal(id);
             else if (btn.classList.contains('btn-overwrite')) overwriteSave(id);
             else if (btn.classList.contains('btn-delete')) deleteSave(id);
         });
 
         // 1. ADD SAVE
-        addSaveBtn.addEventListener('click', () => {
+        document.getElementById('add-save-btn').addEventListener('click', () => {
             const localData = localStorage.getItem(LOCAL_KEY);
             if (!localData) {
-                alert("No local monkeymart_config found! Play the game first to create a save.");
+                showAlert("No local monkeymart_config found! Play the game first to create a save.");
                 return;
             }
+            
+            document.getElementById('add-name').value = '';
+            document.getElementById('add-desc').value = '';
+            openModal('add-modal');
 
-            const name = prompt("Enter a Name for this save:");
-            if (!name) return;
-            const description = prompt("Enter a Description for this save:");
-            if (description === null) return;
+            document.getElementById('add-btn-save').onclick = () => {
+                const name = document.getElementById('add-name').value.trim();
+                const desc = document.getElementById('add-desc').value.trim();
+                
+                if (!name) {
+                    showAlert("Save Name is required!");
+                    return;
+                }
 
-            push(savesRef, {
-                name: name,
-                description: description,
-                saveData: localData // Stored as JSON string
-            }).then(() => {
-                alert("Save added successfully!");
-            }).catch(err => {
-                alert("Error adding save: " + err.message);
-            });
+                push(savesRef, {
+                    name: name,
+                    description: desc,
+                    saveData: localData
+                }).then(() => {
+                    closeModal();
+                    showAlert("Save added successfully to the cloud!");
+                }).catch(err => {
+                    showAlert("Error adding save: " + err.message);
+                });
+            };
+
+            document.getElementById('add-btn-cancel').onclick = closeModal;
         });
 
-        // 2. USE SAVE
-        function useSave(id) {
-            const save = savesCache[id];
-            if (!save || !save.saveData) return;
-
-            if (confirm(`Are you sure you want to overwrite your local progress with "${save.name}"?`)) {
-                localStorage.setItem(LOCAL_KEY, save.saveData);
-                alert("Save applied successfully! You can now Play Game.");
-            }
+        // 2. SELECT SAVE
+        function selectSave(id) {
+            selectedSaveId = id;
+            
+            // UI Updates
+            document.querySelectorAll('.save-card').forEach(card => card.classList.remove('selected'));
+            document.getElementById(`card-${id}`).classList.add('selected');
+            
+            // Pulse the play button
+            playBtn.classList.add('pulse');
         }
 
         // 3. OVERWRITE SAVE
@@ -379,50 +555,68 @@
             const localData = localStorage.getItem(LOCAL_KEY);
             
             if (!localData) {
-                alert("No local save found to overwrite with!");
+                showAlert("No local save found to overwrite with!");
                 return;
             }
 
-            if (confirm(`Are you sure you want to overwrite the cloud save "${save.name}" with your CURRENT local progress?`)) {
-                update(ref(db, `monkey-mart/${id}`), {
-                    saveData: localData
-                }).then(() => {
-                    alert("Cloud save overwritten successfully!");
-                });
-            }
+            showConfirm(
+                "Overwrite Cloud Save?",
+                `Are you sure you want to overwrite "${save.name}" with your CURRENT local progress?`,
+                () => {
+                    update(ref(db, `monkey-mart/${id}`), { saveData: localData }).then(() => {
+                        showAlert("Cloud save overwritten successfully!");
+                    });
+                }
+            );
         }
 
-        // 4. DELETE SAVE
+        // 4. DELETE SAVE (With Countdown)
         function deleteSave(id) {
             const save = savesCache[id];
-            if (confirm(`DANGER: Are you sure you want to permanently delete "${save.name}"?`)) {
-                remove(ref(db, `monkey-mart/${id}`));
-            }
+            showDangerCountdown("Delete Save", save.name, () => {
+                remove(ref(db, `monkey-mart/${id}`)).then(() => {
+                    if (selectedSaveId === id) {
+                        selectedSaveId = null;
+                        playBtn.classList.remove('pulse');
+                    }
+                    showAlert(`Save "${save.name}" has been deleted.`);
+                });
+            });
         }
 
         // 5. PLAY GAME
         playBtn.addEventListener('click', () => {
-            if (!localStorage.getItem(LOCAL_KEY)) {
-                if(!confirm("You don't have a local save active. Play anyway?")) return;
+            if (selectedSaveId) {
+                // Apply the save & Play
+                const save = savesCache[selectedSaveId];
+                if (save && save.saveData) {
+                    localStorage.setItem(LOCAL_KEY, save.saveData);
+                    window.location.href = 'game.html';
+                } else {
+                    showAlert("Error loading save data.");
+                }
+            } else {
+                // No save selected - Ask to clear all local storage
+                showDangerCountdown(
+                    "Start Fresh?", 
+                    "CLEAR", 
+                    () => {
+                        localStorage.clear(); // Clears all local storage
+                        window.location.href = 'game.html';
+                    }
+                );
             }
-            window.location.href = 'game.html';
         });
 
         // --- EDIT MODAL LOGIC ---
-        
         function openEditModal(id) {
             currentEditId = id;
             const save = savesCache[id];
             let parsedData = {};
 
-            try {
-                parsedData = JSON.parse(save.saveData || '{}');
-            } catch(e) {
-                alert("Save data is corrupted or invalid JSON. Cannot edit.");
-                return;
-            }
+            try { parsedData = JSON.parse(save.saveData || '{}'); } 
+            catch(e) { showAlert("Save data is corrupted. Cannot edit."); return; }
 
-            // Populate Fields
             document.getElementById('edit-coins').value = parsedData.coins || 0;
             document.getElementById('edit-cash').value = parsedData.cash || 0;
             document.getElementById('edit-cash2').value = parsedData.cash2 || 0;
@@ -430,30 +624,20 @@
             document.getElementById('edit-cash4').value = parsedData.cash4 || 0;
             document.getElementById('edit-num-market').value = parsedData.numMarket || 0;
             document.getElementById('edit-hat').value = parsedData.selectedHat || 0;
-            
             document.getElementById('edit-upgrades').value = parsedData.upgrades ? JSON.stringify(parsedData.upgrades) : '[]';
             document.getElementById('edit-have-places').value = parsedData.have_places ? JSON.stringify(parsedData.have_places) : '[]';
 
-            editModal.classList.add('visible');
+            openModal('edit-modal');
         }
 
-        cancelEditBtn.addEventListener('click', () => {
-            editModal.classList.remove('visible');
-            currentEditId = null;
-        });
+        document.getElementById('cancel-edit-btn').addEventListener('click', closeModal);
 
-        saveEditBtn.addEventListener('click', () => {
+        document.getElementById('save-edit-btn').addEventListener('click', () => {
             if (!currentEditId) return;
             const save = savesCache[currentEditId];
             let parsedData = {};
+            try { parsedData = JSON.parse(save.saveData || '{}'); } catch(e) { parsedData = {}; }
 
-            try {
-                parsedData = JSON.parse(save.saveData || '{}');
-            } catch(e) {
-                parsedData = {};
-            }
-
-            // Update simple fields
             parsedData.coins = parseFloat(document.getElementById('edit-coins').value) || 0;
             parsedData.cash = parseFloat(document.getElementById('edit-cash').value) || 0;
             parsedData.cash2 = parseFloat(document.getElementById('edit-cash2').value) || 0;
@@ -462,29 +646,26 @@
             parsedData.numMarket = parseInt(document.getElementById('edit-num-market').value) || 0;
             parsedData.selectedHat = parseInt(document.getElementById('edit-hat').value) || 0;
 
-            // Safely parse JSON arrays
             try {
                 parsedData.upgrades = JSON.parse(document.getElementById('edit-upgrades').value);
                 parsedData.have_places = JSON.parse(document.getElementById('edit-have-places').value);
             } catch (e) {
-                alert("Invalid JSON format in Upgrades or Have Places. Please correct it before saving.");
+                showAlert("Invalid JSON format in Upgrades or Have Places.");
                 return;
             }
 
-            const updatedSaveString = JSON.stringify(parsedData);
-
             update(ref(db, `monkey-mart/${currentEditId}`), {
-                saveData: updatedSaveString
+                saveData: JSON.stringify(parsedData)
             }).then(() => {
-                alert("Save data updated successfully!");
-                editModal.classList.remove('visible');
+                closeModal();
+                showAlert("Save data updated successfully!");
                 currentEditId = null;
             }).catch(err => {
-                alert("Error updating save: " + err.message);
+                showAlert("Error updating save: " + err.message);
             });
         });
 
-        // Helper to prevent XSS in rendering
+        // Helper
         function escapeHTML(str) {
             const div = document.createElement('div');
             div.innerText = str;
