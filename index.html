@@ -1,1 +1,496 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monkey Mart Save Manager</title>
+    <!-- Google Fonts for a playful, bouncy aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #8bc34a; /* Grass green */
+            --card-bg: #fffde7;
+            --text-dark: #3e2723;
+            --border-color: #5d4037;
+            
+            /* Bubble Button Colors */
+            --btn-green: #4caf50;
+            --btn-green-shadow: #2e7d32;
+            --btn-yellow: #ffeb3b;
+            --btn-yellow-shadow: #fbc02d;
+            --btn-red: #f44336;
+            --btn-red-shadow: #c62828;
+            --btn-blue: #29b6f6;
+            --btn-blue-shadow: #0277bd;
+            --btn-orange: #ff9800;
+            --btn-orange-shadow: #ef6c00;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            font-family: 'Fredoka', sans-serif;
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            color: #fff;
+            text-shadow: 2px 2px 0 var(--text-dark), -2px -2px 0 var(--text-dark), 2px -2px 0 var(--text-dark), -2px 2px 0 var(--text-dark);
+            letter-spacing: 2px;
+        }
+
+        #save-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .save-card {
+            background-color: var(--card-bg);
+            border: 4px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 8px 0 rgba(93, 64, 55, 0.2);
+            position: relative;
+        }
+
+        .save-card h2 {
+            margin: 0 0 5px 0;
+            color: var(--btn-green-shadow);
+        }
+
+        .save-card p {
+            margin: 0 0 15px 0;
+            font-size: 1.1rem;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* Bubble Buttons */
+        button {
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            padding: 10px 15px;
+            border-radius: 25px;
+            border: 3px solid var(--border-color);
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: transform 0.1s;
+            color: var(--text-dark);
+        }
+
+        button:active {
+            transform: translateY(4px);
+            box-shadow: none !important;
+        }
+
+        .btn-use { background: var(--btn-green); box-shadow: 0 4px 0 var(--btn-green-shadow); color: white; text-shadow: 1px 1px 0 #000; }
+        .btn-edit { background: var(--btn-blue); box-shadow: 0 4px 0 var(--btn-blue-shadow); color: white; text-shadow: 1px 1px 0 #000; }
+        .btn-overwrite { background: var(--btn-orange); box-shadow: 0 4px 0 var(--btn-orange-shadow); color: white; text-shadow: 1px 1px 0 #000; }
+        .btn-delete { background: var(--btn-red); box-shadow: 0 4px 0 var(--btn-red-shadow); color: white; text-shadow: 1px 1px 0 #000; }
+        
+        footer {
+            background-color: var(--border-color);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-around;
+            z-index: 10;
+        }
+
+        .btn-add { background: var(--btn-yellow); box-shadow: 0 4px 0 var(--btn-yellow-shadow); font-size: 1.2rem; padding: 15px 30px;}
+        .btn-play { background: var(--btn-green); box-shadow: 0 4px 0 var(--btn-green-shadow); color: white; font-size: 1.2rem; padding: 15px 30px;}
+
+        /* Modal Styles */
+        #edit-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #edit-modal.visible {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 5px solid var(--border-color);
+            border-radius: 20px;
+            padding: 25px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 0 rgba(0,0,0,0.3);
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            text-align: center;
+            color: var(--btn-orange-shadow);
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .form-group input, .form-group textarea {
+            font-family: 'Fredoka', sans-serif;
+            padding: 10px;
+            border-radius: 12px;
+            border: 3px solid #ccc;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--btn-blue);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            height: 60px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .button-group { justify-content: center; }
+            footer { flex-direction: column; gap: 15px; }
+            .btn-add, .btn-play { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Monkey Mart Save Manager</h1>
+    </header>
+
+    <main id="save-list">
+        <!-- Save cards will be injected here -->
+        <h3 style="color: white; text-align: center;">Loading saves from Firebase...</h3>
+    </main>
+
+    <footer>
+        <button id="add-save-btn" class="btn-add">ADD NEW SAVE</button>
+        <button id="play-btn" class="btn-play">PLAY GAME</button>
+    </footer>
+
+    <!-- Edit Save Modal -->
+    <div id="edit-modal">
+        <div class="modal-content">
+            <h2>Edit Save Data</h2>
+            <div class="form-group">
+                <label>Coins</label>
+                <input type="number" id="edit-coins">
+            </div>
+            <div class="form-group">
+                <label>Cash</label>
+                <input type="number" id="edit-cash">
+            </div>
+            <div class="form-group">
+                <label>Cash 2</label>
+                <input type="number" id="edit-cash2">
+            </div>
+            <div class="form-group">
+                <label>Cash 3</label>
+                <input type="number" id="edit-cash3">
+            </div>
+            <div class="form-group">
+                <label>Cash 4</label>
+                <input type="number" id="edit-cash4">
+            </div>
+            <div class="form-group">
+                <label>Num Market</label>
+                <input type="number" id="edit-num-market">
+            </div>
+            <div class="form-group">
+                <label>Selected Hat</label>
+                <input type="number" id="edit-hat">
+            </div>
+            <div class="form-group">
+                <label>Upgrades (JSON Array)</label>
+                <textarea id="edit-upgrades"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Have Places (JSON Array)</label>
+                <textarea id="edit-have-places"></textarea>
+            </div>
+            
+            <div class="modal-buttons">
+                <button id="cancel-edit-btn" class="btn-delete">Cancel</button>
+                <button id="save-edit-btn" class="btn-use">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (v10 Module) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, onValue, push, update, remove } 
+            from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            databaseURL: "https://jelly-now-playing-default-rtdb.firebaseio.com"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const savesRef = ref(db, 'monkey-mart');
+
+        const LOCAL_KEY = 'monkeymart_config';
+        let savesCache = {};
+        let currentEditId = null;
+
+        // DOM Elements
+        const saveListEl = document.getElementById('save-list');
+        const addSaveBtn = document.getElementById('add-save-btn');
+        const playBtn = document.getElementById('play-btn');
+        
+        // Modal Elements
+        const editModal = document.getElementById('edit-modal');
+        const saveEditBtn = document.getElementById('save-edit-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
+        // Fetch and Render Saves
+        onValue(savesRef, (snapshot) => {
+            saveListEl.innerHTML = '';
+            savesCache = {};
+
+            if (!snapshot.exists()) {
+                saveListEl.innerHTML = '<h3 style="color: white; text-align: center;">No saves found. Be the first to add one!</h3>';
+                return;
+            }
+
+            const data = snapshot.val();
+            
+            // Convert to array to render
+            for (const [id, save] of Object.entries(data)) {
+                savesCache[id] = save;
+                const card = document.createElement('div');
+                card.className = 'save-card';
+                card.innerHTML = `
+                    <h2>${escapeHTML(save.name || 'Unnamed Save')}</h2>
+                    <p>${escapeHTML(save.description || 'No description provided.')}</p>
+                    <div class="button-group">
+                        <button class="btn-use" data-id="${id}">Use Save</button>
+                        <button class="btn-edit" data-id="${id}">Edit</button>
+                        <button class="btn-overwrite" data-id="${id}">Overwrite</button>
+                        <button class="btn-delete" data-id="${id}">Delete</button>
+                    </div>
+                `;
+                saveListEl.appendChild(card);
+            }
+        });
+
+        // Event Delegation for Save Cards
+        saveListEl.addEventListener('click', (e) => {
+            const btn = e.target;
+            if (!btn.dataset.id) return;
+            const id = btn.dataset.id;
+
+            if (btn.classList.contains('btn-use')) useSave(id);
+            else if (btn.classList.contains('btn-edit')) openEditModal(id);
+            else if (btn.classList.contains('btn-overwrite')) overwriteSave(id);
+            else if (btn.classList.contains('btn-delete')) deleteSave(id);
+        });
+
+        // 1. ADD SAVE
+        addSaveBtn.addEventListener('click', () => {
+            const localData = localStorage.getItem(LOCAL_KEY);
+            if (!localData) {
+                alert("No local monkeymart_config found! Play the game first to create a save.");
+                return;
+            }
+
+            const name = prompt("Enter a Name for this save:");
+            if (!name) return;
+            const description = prompt("Enter a Description for this save:");
+            if (description === null) return;
+
+            push(savesRef, {
+                name: name,
+                description: description,
+                saveData: localData // Stored as JSON string
+            }).then(() => {
+                alert("Save added successfully!");
+            }).catch(err => {
+                alert("Error adding save: " + err.message);
+            });
+        });
+
+        // 2. USE SAVE
+        function useSave(id) {
+            const save = savesCache[id];
+            if (!save || !save.saveData) return;
+
+            if (confirm(`Are you sure you want to overwrite your local progress with "${save.name}"?`)) {
+                localStorage.setItem(LOCAL_KEY, save.saveData);
+                alert("Save applied successfully! You can now Play Game.");
+            }
+        }
+
+        // 3. OVERWRITE SAVE
+        function overwriteSave(id) {
+            const save = savesCache[id];
+            const localData = localStorage.getItem(LOCAL_KEY);
+            
+            if (!localData) {
+                alert("No local save found to overwrite with!");
+                return;
+            }
+
+            if (confirm(`Are you sure you want to overwrite the cloud save "${save.name}" with your CURRENT local progress?`)) {
+                update(ref(db, `monkey-mart/${id}`), {
+                    saveData: localData
+                }).then(() => {
+                    alert("Cloud save overwritten successfully!");
+                });
+            }
+        }
+
+        // 4. DELETE SAVE
+        function deleteSave(id) {
+            const save = savesCache[id];
+            if (confirm(`DANGER: Are you sure you want to permanently delete "${save.name}"?`)) {
+                remove(ref(db, `monkey-mart/${id}`));
+            }
+        }
+
+        // 5. PLAY GAME
+        playBtn.addEventListener('click', () => {
+            if (!localStorage.getItem(LOCAL_KEY)) {
+                if(!confirm("You don't have a local save active. Play anyway?")) return;
+            }
+            window.location.href = 'game.html';
+        });
+
+        // --- EDIT MODAL LOGIC ---
+        
+        function openEditModal(id) {
+            currentEditId = id;
+            const save = savesCache[id];
+            let parsedData = {};
+
+            try {
+                parsedData = JSON.parse(save.saveData || '{}');
+            } catch(e) {
+                alert("Save data is corrupted or invalid JSON. Cannot edit.");
+                return;
+            }
+
+            // Populate Fields
+            document.getElementById('edit-coins').value = parsedData.coins || 0;
+            document.getElementById('edit-cash').value = parsedData.cash || 0;
+            document.getElementById('edit-cash2').value = parsedData.cash2 || 0;
+            document.getElementById('edit-cash3').value = parsedData.cash3 || 0;
+            document.getElementById('edit-cash4').value = parsedData.cash4 || 0;
+            document.getElementById('edit-num-market').value = parsedData.numMarket || 0;
+            document.getElementById('edit-hat').value = parsedData.selectedHat || 0;
+            
+            document.getElementById('edit-upgrades').value = parsedData.upgrades ? JSON.stringify(parsedData.upgrades) : '[]';
+            document.getElementById('edit-have-places').value = parsedData.have_places ? JSON.stringify(parsedData.have_places) : '[]';
+
+            editModal.classList.add('visible');
+        }
+
+        cancelEditBtn.addEventListener('click', () => {
+            editModal.classList.remove('visible');
+            currentEditId = null;
+        });
+
+        saveEditBtn.addEventListener('click', () => {
+            if (!currentEditId) return;
+            const save = savesCache[currentEditId];
+            let parsedData = {};
+
+            try {
+                parsedData = JSON.parse(save.saveData || '{}');
+            } catch(e) {
+                parsedData = {};
+            }
+
+            // Update simple fields
+            parsedData.coins = parseFloat(document.getElementById('edit-coins').value) || 0;
+            parsedData.cash = parseFloat(document.getElementById('edit-cash').value) || 0;
+            parsedData.cash2 = parseFloat(document.getElementById('edit-cash2').value) || 0;
+            parsedData.cash3 = parseFloat(document.getElementById('edit-cash3').value) || 0;
+            parsedData.cash4 = parseFloat(document.getElementById('edit-cash4').value) || 0;
+            parsedData.numMarket = parseInt(document.getElementById('edit-num-market').value) || 0;
+            parsedData.selectedHat = parseInt(document.getElementById('edit-hat').value) || 0;
+
+            // Safely parse JSON arrays
+            try {
+                parsedData.upgrades = JSON.parse(document.getElementById('edit-upgrades').value);
+                parsedData.have_places = JSON.parse(document.getElementById('edit-have-places').value);
+            } catch (e) {
+                alert("Invalid JSON format in Upgrades or Have Places. Please correct it before saving.");
+                return;
+            }
+
+            const updatedSaveString = JSON.stringify(parsedData);
+
+            update(ref(db, `monkey-mart/${currentEditId}`), {
+                saveData: updatedSaveString
+            }).then(() => {
+                alert("Save data updated successfully!");
+                editModal.classList.remove('visible');
+                currentEditId = null;
+            }).catch(err => {
+                alert("Error updating save: " + err.message);
+            });
+        });
+
+        // Helper to prevent XSS in rendering
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.innerText = str;
+            return div.innerHTML;
+        }
+
+    </script>
+</body>
+</html>
